@@ -147,6 +147,90 @@ We aiming to create FQDN dns entry and get a valid ssl cert applied in running N
     ```
     > Note : Later we are going to move this chunk of code into separate file
 
+## Certificate creation (Let's Encrypt staging for now)
+- Moved DSN code into [dns_goddady.tf](dns_godaddy.tf)
+- REplace main.tf with : 
+    ```terraform
+    resource "tls_private_key" "private_key" {
+    algorithm = "RSA"
+    }
+
+    resource "acme_registration" "reg" {
+    account_key_pem = "${tls_private_key.private_key.private_key_pem}"
+    email_address   = "andrii@${var.site_domain}"
+    }
+
+    resource "acme_certificate" "certificate" {
+    account_key_pem = "${acme_registration.reg.account_key_pem}"
+    common_name     = "${var.site_record}.${var.site_domain}"
+    #subject_alternative_names = ["www2.example.com"]
+
+    dns_challenge {
+        provider = "godaddy"
+    }
+    }
+    ```
+- Added [orovider_acme.tf](orovider_acme.tf) with content : 
+    ```terraform
+    provider "acme" {
+    server_url = "https://acme-staging-v02.api.letsencrypt.org/directory"
+    }
+    ```
+- Terraform init :
+    ```bash
+    Initializing the backend...
+
+    Initializing provider plugins...
+    - Checking for available provider plugins...
+    - Downloading plugin for provider "tls" (hashicorp/tls) 2.1.1...
+    - Downloading plugin for provider "acme" (terraform-providers/acme) 1.4.0...
+
+    The following providers do not have any version constraints in configuration,
+    so the latest version was installed.
+
+    To prevent automatic upgrades to new major versions that may contain breaking
+    changes, it is recommended to add version = "..." constraints to the
+    corresponding provider blocks in configuration, with the constraint strings
+    suggested below.
+
+    * provider.acme: version = "~> 1.4"
+    * provider.tls: version = "~> 2.1"
+
+    Terraform has been successfully initialized!
+    ```
+- Terraform apply : 
+    ```bash
+    tls_private_key.private_key: Creating...
+    tls_private_key.private_key: Creation complete after 0s [id=74b70050521faa716a0cd5a2005d5790a9c64903]
+    acme_registration.reg: Creating...
+    acme_registration.reg: Creation complete after 2s [id=https://acme-staging-v02.api.letsencrypt.org/acme/acct/11378110]
+    acme_certificate.certificate: Creating...
+    acme_certificate.certificate: Still creating... [10s elapsed]
+    acme_certificate.certificate: Still creating... [20s elapsed]
+    acme_certificate.certificate: Still creating... [30s elapsed]
+    acme_certificate.certificate: Creation complete after 32s [id=https://acme-staging-v02.api.letsencrypt.org/acme/cert/fa711b0d3cd37859dba731c297c65ece3e3e]
+
+    Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+
+    Outputs:
+
+    certificate = -----BEGIN CERTIFICATE-----
+    MIIFSzCCBDOgAwIBAgITAPpxGw0803hZ26cxwpfGXs4+PjANBgkqhkiG9w0BAQsF
+    ...
+    ...
+    gsako0xrJ9rDvYqjVY/m
+    -----END CERTIFICATE-----
+
+    certificate_url = https://acme-staging-v02.api.letsencrypt.org/acme/cert/fa711b0d3cd37859dba731c297c65ece3e3e
+    ```
+    > Note : Certificate here is not important as it is staging, temporary only, not a production
+
+# Notes
+
+do not foreget - FULL nginx
+
+sudo ufw allow 'Nginx Full'
+sudo ufw delete allow 'Nginx HTTP'
 
 # Technologies
 
@@ -158,7 +242,7 @@ We aiming to create FQDN dns entry and get a valid ssl cert applied in running N
 6. Let'sEncrypt
 
 # TODO
-- [ ] register certificate
+
 - [ ] create configuiration for deploying ec2-nginx machine
 - [ ] tune configuraiton to include certificate
 - [ ] update config
@@ -166,3 +250,4 @@ We aiming to create FQDN dns entry and get a valid ssl cert applied in running N
 # DONE
 - [x] export GoDaddy keys/challenge responce
 - [x] create domain entry
+- [x] register certificate
