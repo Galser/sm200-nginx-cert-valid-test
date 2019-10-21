@@ -1,27 +1,18 @@
+resource "tls_private_key" "private_key" {
+  algorithm = "RSA"
+}
 
-resource "godaddy_domain_record" "our_site_record" {
-  domain = var.site_domain
+resource "acme_registration" "reg" {
+  account_key_pem = "${tls_private_key.private_key.private_key_pem}"
+  email_address   = "andrii@${var.site_domain}"
+}
 
-  record {
-    name = var.site_record
-    type = "A"
-    data = "192.168.1.2"
-    ttl  = 3600
-  }
+resource "acme_certificate" "certificate" {
+  account_key_pem = "${acme_registration.reg.account_key_pem}"
+  common_name     = "${var.site_record}.${var.site_domain}"
+  #subject_alternative_names = ["www2.example.com"]
 
-  record {
-    data     = "@"
-    name     = "www"
-    priority = 0
-    ttl      = 3600
-    type     = "CNAME"
-  }
-
-  record {
-    data     = "_domainconnect.gd.domaincontrol.com"
-    name     = "_domainconnect"
-    priority = 0
-    ttl      = 3600
-    type     = "CNAME"
+  dns_challenge {
+    provider = "godaddy"
   }
 }
