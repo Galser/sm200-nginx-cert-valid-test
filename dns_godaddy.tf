@@ -5,8 +5,8 @@ resource "godaddy_domain_record" "our_site_record" {
   record {
     name = var.site_record
     type = "A"
-    data = "192.168.1.2"
-    ttl  = 3600
+    data = "${aws_instance.nginxweb.public_ip}"
+    ttl  = 600
   }
 
   record {
