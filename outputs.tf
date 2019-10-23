@@ -1,7 +1,8 @@
-output "certificate" {
-  value = "${acme_certificate.certificate.certificate_pem}"
+
+output "public_ip" {
+  value = "${aws_instance.nginxweb.public_ip}"
 }
 
-output "certificate_url" { 
-  value = "${acme_certificate.certificate.certificate_url}"
+output "public_dns" {
+  value = "${aws_instance.nginxweb.public_dns}"
 }
